@@ -34,7 +34,7 @@ func main() {
 		}
 
 		pendingReviews := api.Group("/pending-reviews")
-		pendingReviews.Use(middleware.AuthMiddleware(), middleware.AdminOrComposerMiddleware())
+		pendingReviews.Use(middleware.AuthMiddleware(), middleware.OnlyAdminMiddleware())
 		{
 			pendingReviews.GET("", reviewHandler.GetAllPendingReviews)
 			pendingReviews.POST("/:id/approve", reviewHandler.ApproveReview)

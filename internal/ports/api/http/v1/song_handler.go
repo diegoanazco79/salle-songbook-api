@@ -6,6 +6,7 @@ import (
 	"salle-songbook-api/internal/core/review"
 	"salle-songbook-api/internal/core/song"
 	"salle-songbook-api/internal/ports/repository/memory"
+	"salle-songbook-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,17 +22,17 @@ func NewSongHandler(songRepo *memory.SongRepository, reviewRepo *memory.ReviewRe
 
 func (h *SongHandler) GetAll(c *gin.Context) {
 	songs, _ := h.songRepo.GetAll()
-	c.JSON(http.StatusOK, songs)
+	response.Success(c, songs, "List of songs retrieved")
 }
 
 func (h *SongHandler) GetByID(c *gin.Context) {
 	id := c.Param("id")
 	s, err := h.songRepo.GetByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Song not found"})
+		response.Error(c, http.StatusNotFound, "Song not found", err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, s)
+	response.Success(c, s, "Song retrieved")
 }
 
 func (h *SongHandler) Create(c *gin.Context) {
@@ -40,21 +41,26 @@ func (h *SongHandler) Create(c *gin.Context) {
 
 	var s song.Song
 	if err := c.ShouldBindJSON(&s); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid request body", err.Error())
 		return
 	}
 
 	if role == "admin" {
 		created, _ := h.songRepo.Create(s)
-		c.JSON(http.StatusCreated, created)
+		response.Created(c, created, "Song created successfully")
 	} else {
 		pr := review.PendingReview{
-			Action:      review.Create,
-			NewSongData: s,
+			Action: review.Create,
+			NewSongData: &review.SongDataDTO{
+				Title:                  s.Title,
+				Lyrics:                 s.Lyrics,
+				LyricsWithGuitarChords: s.LyricsWithGuitarChords,
+				Author:                 s.Author,
+			},
 			RequestedBy: username,
 		}
 		pending, _ := h.reviewRepo.Create(pr)
-		c.JSON(http.StatusAccepted, pending)
+		response.Created(c, pending, "Song creation request submitted for review")
 	}
 }
 
@@ -65,26 +71,31 @@ func (h *SongHandler) Update(c *gin.Context) {
 
 	var s song.Song
 	if err := c.ShouldBindJSON(&s); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid request body", err.Error())
 		return
 	}
 
 	if role == "admin" {
 		updated, err := h.songRepo.Update(id, s)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Song not found"})
+			response.Error(c, http.StatusNotFound, "Song not found", err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, updated)
+		response.Success(c, updated, "Song updated successfully")
 	} else {
 		pr := review.PendingReview{
-			Action:      review.Update,
-			SongID:      id,
-			NewSongData: s,
+			Action: review.Update,
+			SongID: id,
+			NewSongData: &review.SongDataDTO{
+				Title:                  s.Title,
+				Lyrics:                 s.Lyrics,
+				LyricsWithGuitarChords: s.LyricsWithGuitarChords,
+				Author:                 s.Author,
+			},
 			RequestedBy: username,
 		}
 		pending, _ := h.reviewRepo.Create(pr)
-		c.JSON(http.StatusAccepted, pending)
+		response.Created(c, pending, "Song update request submitted for review")
 	}
 }
 
@@ -96,10 +107,10 @@ func (h *SongHandler) Delete(c *gin.Context) {
 	if role == "admin" {
 		err := h.songRepo.Delete(id)
 		if err != nil {
-			c.JSON(http.StatusNotFound, gin.H{"error": "Song not found"})
+			response.Error(c, http.StatusNotFound, "Song not found", err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"message": "Deleted successfully"})
+		response.Success(c, nil, "Song deleted successfully")
 	} else {
 		pr := review.PendingReview{
 			Action:      review.Delete,
@@ -107,6 +118,6 @@ func (h *SongHandler) Delete(c *gin.Context) {
 			RequestedBy: username,
 		}
 		pending, _ := h.reviewRepo.Create(pr)
-		c.JSON(http.StatusAccepted, pending)
+		response.Created(c, pending, "Song deletion request submitted for review")
 	}
 }

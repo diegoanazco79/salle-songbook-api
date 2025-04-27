@@ -3,6 +3,7 @@ package v1
 import (
 	"net/http"
 	"salle-songbook-api/internal/ports/repository/memory"
+	"salle-songbook-api/pkg/response"
 	"salle-songbook-api/pkg/token"
 
 	"github.com/gin-gonic/gin"
@@ -24,21 +25,21 @@ type loginRequest struct {
 func (h *AuthHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		response.Error(c, http.StatusBadRequest, "Invalid request body", err.Error())
 		return
 	}
 
 	user, err := h.userRepo.GetByUsername(req.Username)
 	if err != nil || user.Password != req.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "invalid credentials"})
+		response.Error(c, http.StatusUnauthorized, "Invalid credentials", "unauthorized")
 		return
 	}
 
 	tokenString, err := token.GenerateToken(user.Username, string(user.Role))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "could not generate token"})
+		response.Error(c, http.StatusInternalServerError, "Could not generate token", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString})
+	response.Success(c, gin.H{"token": tokenString}, "Login successful")
 }

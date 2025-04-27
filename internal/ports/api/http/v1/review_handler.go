@@ -2,10 +2,10 @@ package v1
 
 import (
 	"net/http"
-
 	"salle-songbook-api/internal/core/review"
 	"salle-songbook-api/internal/core/song"
 	"salle-songbook-api/internal/ports/repository/memory"
+	"salle-songbook-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +21,7 @@ func NewReviewHandler(reviewRepo *memory.ReviewRepository, songRepo *memory.Song
 
 func (h *ReviewHandler) GetAllPendingReviews(c *gin.Context) {
 	reviews, _ := h.reviewRepo.GetAll()
-	c.JSON(http.StatusOK, reviews)
+	response.Success(c, reviews, "List of pending reviews retrieved")
 }
 
 func (h *ReviewHandler) ApproveReview(c *gin.Context) {
@@ -29,27 +29,25 @@ func (h *ReviewHandler) ApproveReview(c *gin.Context) {
 
 	pr, err := h.reviewRepo.GetByID(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Pending review not found"})
+		response.Error(c, http.StatusNotFound, "Pending review not found", err.Error())
 		return
 	}
 
 	switch pr.Action {
 	case review.Create:
-		songData := pr.NewSongData.(map[string]interface{})
 		newSong := song.Song{
-			Title:                  songData["title"].(string),
-			Lyrics:                 songData["lyrics"].(string),
-			LyricsWithGuitarChords: songData["lyrics_with_guitar_chords"].(string),
-			Author:                 songData["author"].(string),
+			Title:                  pr.NewSongData.Title,
+			Lyrics:                 pr.NewSongData.Lyrics,
+			LyricsWithGuitarChords: pr.NewSongData.LyricsWithGuitarChords,
+			Author:                 pr.NewSongData.Author,
 		}
 		h.songRepo.Create(newSong)
 	case review.Update:
-		songData := pr.NewSongData.(map[string]interface{})
 		updatedSong := song.Song{
-			Title:                  songData["title"].(string),
-			Lyrics:                 songData["lyrics"].(string),
-			LyricsWithGuitarChords: songData["lyrics_with_guitar_chords"].(string),
-			Author:                 songData["author"].(string),
+			Title:                  pr.NewSongData.Title,
+			Lyrics:                 pr.NewSongData.Lyrics,
+			LyricsWithGuitarChords: pr.NewSongData.LyricsWithGuitarChords,
+			Author:                 pr.NewSongData.Author,
 		}
 		h.songRepo.Update(pr.SongID, updatedSong)
 	case review.Delete:
@@ -57,7 +55,7 @@ func (h *ReviewHandler) ApproveReview(c *gin.Context) {
 	}
 
 	h.reviewRepo.Delete(id)
-	c.JSON(http.StatusOK, gin.H{"message": "Review approved and action executed"})
+	response.Success(c, nil, "Review approved and action executed")
 }
 
 func (h *ReviewHandler) RejectReview(c *gin.Context) {
@@ -65,9 +63,9 @@ func (h *ReviewHandler) RejectReview(c *gin.Context) {
 
 	err := h.reviewRepo.Delete(id)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Pending review not found"})
+		response.Error(c, http.StatusNotFound, "Pending review not found", err.Error())
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Review rejected and deleted"})
+	response.Success(c, nil, "Review rejected and deleted")
 }
