@@ -1,7 +1,10 @@
 package main
 
 import (
+	"salle-songbook-api/configs"
 	"salle-songbook-api/internal/ports/api/http/middleware"
+	"salle-songbook-api/internal/ports/repository/mongo"
+
 	v1 "salle-songbook-api/internal/ports/api/http/v1"
 	"salle-songbook-api/internal/ports/repository/memory"
 
@@ -9,11 +12,13 @@ import (
 )
 
 func main() {
+	configs.LoadConfig() // 👈 importantísimo cargar configuración
+
 	r := gin.Default()
 
-	userRepo := memory.NewUserRepository()
-	songRepo := memory.NewSongRepository()
-	reviewRepo := memory.NewReviewRepository()
+	songRepo := mongo.NewSongMongoRepository()
+	reviewRepo := mongo.NewReviewMongoRepository()
+	userRepo := memory.NewUserRepository() // los users siguen en memoria por ahora
 
 	authHandler := v1.NewAuthHandler(userRepo)
 	songHandler := v1.NewSongHandler(songRepo, reviewRepo)

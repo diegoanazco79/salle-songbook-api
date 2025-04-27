@@ -4,21 +4,22 @@ import (
 	"net/http"
 	"salle-songbook-api/internal/core/review"
 	"salle-songbook-api/internal/core/song"
-	"salle-songbook-api/internal/ports/repository/memory"
 	"salle-songbook-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type ReviewHandler struct {
-	reviewRepo *memory.ReviewRepository
-	songRepo   *memory.SongRepository
+	reviewRepo review.Repository
+	songRepo   song.Repository
 }
 
-func NewReviewHandler(reviewRepo *memory.ReviewRepository, songRepo *memory.SongRepository) *ReviewHandler {
-	return &ReviewHandler{reviewRepo: reviewRepo, songRepo: songRepo}
+func NewReviewHandler(reviewRepo review.Repository, songRepo song.Repository) *ReviewHandler {
+	return &ReviewHandler{
+		reviewRepo: reviewRepo,
+		songRepo:   songRepo,
+	}
 }
-
 func (h *ReviewHandler) GetAllPendingReviews(c *gin.Context) {
 	reviews, _ := h.reviewRepo.GetAll()
 	response.Success(c, reviews, "List of pending reviews retrieved")

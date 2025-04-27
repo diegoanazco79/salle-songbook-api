@@ -2,6 +2,13 @@ package review
 
 type ReviewAction string
 
+type Repository interface {
+	GetAll() ([]PendingReview, error)
+	GetByID(id string) (PendingReview, error)
+	Create(PendingReview) (PendingReview, error)
+	Delete(id string) error
+}
+
 const (
 	Create ReviewAction = "create"
 	Update ReviewAction = "update"

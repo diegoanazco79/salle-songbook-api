@@ -5,21 +5,22 @@ import (
 
 	"salle-songbook-api/internal/core/review"
 	"salle-songbook-api/internal/core/song"
-	"salle-songbook-api/internal/ports/repository/memory"
 	"salle-songbook-api/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )
 
 type SongHandler struct {
-	songRepo   *memory.SongRepository
-	reviewRepo *memory.ReviewRepository
+	songRepo   song.Repository
+	reviewRepo review.Repository
 }
 
-func NewSongHandler(songRepo *memory.SongRepository, reviewRepo *memory.ReviewRepository) *SongHandler {
-	return &SongHandler{songRepo: songRepo, reviewRepo: reviewRepo}
+func NewSongHandler(songRepo song.Repository, reviewRepo review.Repository) *SongHandler {
+	return &SongHandler{
+		songRepo:   songRepo,
+		reviewRepo: reviewRepo,
+	}
 }
-
 func (h *SongHandler) GetAll(c *gin.Context) {
 	songs, _ := h.songRepo.GetAll()
 	response.Success(c, songs, "List of songs retrieved")
