@@ -13,9 +13,11 @@ func main() {
 
 	userRepo := memory.NewUserRepository()
 	songRepo := memory.NewSongRepository()
+	reviewRepo := memory.NewReviewRepository()
 
 	authHandler := v1.NewAuthHandler(userRepo)
-	songHandler := v1.NewSongHandler(songRepo)
+	songHandler := v1.NewSongHandler(songRepo, reviewRepo)
+	reviewHandler := v1.NewReviewHandler(reviewRepo, songRepo)
 
 	api := r.Group("/api/v1")
 	{
@@ -29,6 +31,14 @@ func main() {
 			songs.POST("", songHandler.Create)
 			songs.PUT("/:id", songHandler.Update)
 			songs.DELETE("/:id", songHandler.Delete)
+		}
+
+		pendingReviews := api.Group("/pending-reviews")
+		pendingReviews.Use(middleware.AuthMiddleware(), middleware.AdminOrComposerMiddleware())
+		{
+			pendingReviews.GET("", reviewHandler.GetAllPendingReviews)
+			pendingReviews.POST("/:id/approve", reviewHandler.ApproveReview)
+			pendingReviews.POST("/:id/reject", reviewHandler.RejectReview)
 		}
 	}
 
