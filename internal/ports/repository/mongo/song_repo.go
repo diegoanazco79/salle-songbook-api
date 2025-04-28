@@ -8,6 +8,7 @@ import (
 	"salle-songbook-api/configs"
 	"salle-songbook-api/internal/core/song"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -81,7 +82,17 @@ func (r *SongMongoRepository) Create(s song.Song) (song.Song, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := r.collection.InsertOne(ctx, s)
+	s.ID = uuid.NewString()
+
+	doc := bson.M{
+		"id":                        s.ID,
+		"title":                     s.Title,
+		"lyrics":                    s.Lyrics,
+		"lyrics_with_guitar_chords": s.LyricsWithGuitarChords,
+		"author":                    s.Author,
+	}
+
+	res, err := r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return song.Song{}, errors.New("song title already exists")
