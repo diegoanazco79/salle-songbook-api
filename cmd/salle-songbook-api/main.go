@@ -1,29 +1,40 @@
 package main
 
 import (
+	"context"
+	v1 "salle-songbook-api/internal/ports/api/http/v1"
+
+	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
+	"github.com/gin-gonic/gin"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+
 	"salle-songbook-api/configs"
 	"salle-songbook-api/internal/ports/api/http/middleware"
-	"salle-songbook-api/internal/ports/repository/mongo"
-
-	v1 "salle-songbook-api/internal/ports/api/http/v1"
 	"salle-songbook-api/internal/ports/repository/memory"
-
-	"github.com/gin-gonic/gin"
+	"salle-songbook-api/internal/ports/repository/mongo"
 )
 
-func main() {
-	configs.LoadConfig() // 👈 importantísimo cargar configuración
+var ginLambda *ginadapter.GinLambda
+
+func init() {
+	// Cargamos configuración
+	configs.LoadConfig()
 
 	r := gin.Default()
 
+	// Inicializamos repositorios
 	songRepo := mongo.NewSongMongoRepository()
 	reviewRepo := mongo.NewReviewMongoRepository()
-	userRepo := memory.NewUserRepository() // los users siguen en memoria por ahora
+	userRepo := memory.NewUserRepository() // Usuarios en memoria todavía
 
+	// Inicializamos handlers
 	authHandler := v1.NewAuthHandler(userRepo)
 	songHandler := v1.NewSongHandler(songRepo, reviewRepo)
 	reviewHandler := v1.NewReviewHandler(reviewRepo, songRepo)
 
+	// Definimos rutas
 	api := r.Group("/api/v1")
 	{
 		api.POST("/login", authHandler.Login)
@@ -47,5 +58,15 @@ func main() {
 		}
 	}
 
-	r.Run(":8080")
+	// Adaptamos Gin a AWS Lambda handler
+	ginLambda = ginadapter.New(r)
+}
+
+func main() {
+	// Ejecutamos como lambda handler
+	lambda.Start(Handler)
+}
+
+func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+	return ginLambda.ProxyWithContext(ctx, req)
 }
