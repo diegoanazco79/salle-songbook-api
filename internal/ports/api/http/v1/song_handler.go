@@ -79,7 +79,13 @@ func (h *SongHandler) Update(c *gin.Context) {
 	if role == "admin" {
 		updated, err := h.songRepo.Update(id, s)
 		if err != nil {
-			response.Error(c, http.StatusNotFound, "Song not found", err.Error())
+			if err.Error() == "song not found" {
+				response.Error(c, http.StatusNotFound, "Song not found", err.Error())
+			} else if err.Error() == "song title already exists" {
+				response.Error(c, http.StatusConflict, "Song title already exists", err.Error())
+			} else {
+				response.Error(c, http.StatusInternalServerError, "Failed to update song", err.Error())
+			}
 			return
 		}
 		response.Success(c, updated, "Song updated successfully")

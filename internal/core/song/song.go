@@ -9,9 +9,9 @@ type Repository interface {
 }
 
 type Song struct {
-	ID                     string `json:"id"`
-	Title                  string `json:"title"`
-	Lyrics                 string `json:"lyrics"`
-	LyricsWithGuitarChords string `json:"lyrics_with_guitar_chords"`
-	Author                 string `json:"author"`
+	ID                     string `json:"id" bson:"id"`
+	Title                  string `json:"title" bson:"title"`
+	Lyrics                 string `json:"lyrics" bson:"lyrics"`
+	LyricsWithGuitarChords string `json:"lyrics_with_guitar_chords" bson:"lyrics_with_guitar_chords"`
+	Author                 string `json:"author" bson:"author"`
 }
