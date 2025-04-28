@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -50,13 +49,8 @@ func (r *ReviewMongoRepository) GetByID(id string) (review.PendingReview, error)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return review.PendingReview{}, err
-	}
-
 	var pr review.PendingReview
-	err = r.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&pr)
+	err := r.collection.FindOne(ctx, bson.M{"id": id}).Decode(&pr)
 	if err != nil {
 		return review.PendingReview{}, errors.New("pending review not found")
 	}
@@ -78,12 +72,11 @@ func (r *ReviewMongoRepository) Create(pr review.PendingReview) (review.PendingR
 		"requested_by":  pr.RequestedBy,
 	}
 
-	res, err := r.collection.InsertOne(ctx, doc)
+	_, err := r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		return review.PendingReview{}, err
 	}
 
-	pr.ID = res.InsertedID.(primitive.ObjectID).Hex()
 	return pr, nil
 }
 
@@ -91,12 +84,7 @@ func (r *ReviewMongoRepository) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objID})
+	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id})
 	if err != nil {
 		return err
 	}

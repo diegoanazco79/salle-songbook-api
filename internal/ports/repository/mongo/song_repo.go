@@ -10,7 +10,6 @@ import (
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -64,13 +63,8 @@ func (r *SongMongoRepository) GetByID(id string) (song.Song, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return song.Song{}, err
-	}
-
 	var s song.Song
-	err = r.collection.FindOne(ctx, bson.M{"_id": objID}).Decode(&s)
+	err := r.collection.FindOne(ctx, bson.M{"id": id}).Decode(&s)
 	if err != nil {
 		return song.Song{}, errors.New("song not found")
 	}
@@ -92,7 +86,7 @@ func (r *SongMongoRepository) Create(s song.Song) (song.Song, error) {
 		"author":                    s.Author,
 	}
 
-	res, err := r.collection.InsertOne(ctx, doc)
+	_, err := r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return song.Song{}, errors.New("song title already exists")
@@ -100,18 +94,12 @@ func (r *SongMongoRepository) Create(s song.Song) (song.Song, error) {
 		return song.Song{}, err
 	}
 
-	s.ID = res.InsertedID.(primitive.ObjectID).Hex()
 	return s, nil
 }
 
 func (r *SongMongoRepository) Update(id string, s song.Song) (song.Song, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return song.Song{}, err
-	}
 
 	update := bson.M{
 		"$set": bson.M{
@@ -122,7 +110,7 @@ func (r *SongMongoRepository) Update(id string, s song.Song) (song.Song, error) 
 		},
 	}
 
-	result, err := r.collection.UpdateByID(ctx, objID, update)
+	result, err := r.collection.UpdateOne(ctx, bson.M{"id": id}, update)
 	if err != nil {
 		if mongo.IsDuplicateKeyError(err) {
 			return song.Song{}, errors.New("song title already exists")
@@ -141,12 +129,7 @@ func (r *SongMongoRepository) Delete(id string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	objID, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-
-	result, err := r.collection.DeleteOne(ctx, bson.M{"_id": objID})
+	result, err := r.collection.DeleteOne(ctx, bson.M{"id": id})
 	if err != nil {
 		return err
 	}
