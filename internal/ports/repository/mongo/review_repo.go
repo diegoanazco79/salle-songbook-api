@@ -8,6 +8,7 @@ import (
 	"salle-songbook-api/configs"
 	"salle-songbook-api/internal/core/review"
 
+	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -67,7 +68,17 @@ func (r *ReviewMongoRepository) Create(pr review.PendingReview) (review.PendingR
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	res, err := r.collection.InsertOne(ctx, pr)
+	pr.ID = uuid.NewString()
+
+	doc := bson.M{
+		"id":            pr.ID,
+		"action":        pr.Action,
+		"song_id":       pr.SongID,
+		"new_song_data": pr.NewSongData,
+		"requested_by":  pr.RequestedBy,
+	}
+
+	res, err := r.collection.InsertOne(ctx, doc)
 	if err != nil {
 		return review.PendingReview{}, err
 	}
