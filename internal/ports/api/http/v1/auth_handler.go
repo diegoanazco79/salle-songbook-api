@@ -44,5 +44,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	response.Success(c, gin.H{
 		"token":      tokenString,
 		"expires_at": expiresAt.Unix(),
+		"user": gin.H{
+			"id":       user.ID,
+			"username": user.Username,
+			"role":     user.Role,
+		},
 	}, "Login successful")
 }

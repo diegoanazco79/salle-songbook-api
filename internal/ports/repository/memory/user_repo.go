@@ -21,7 +21,25 @@ func (r *UserRepository) seed() {
 	r.users["admin"] = user.User{
 		ID:       uuid.NewString(),
 		Username: "admin",
-		Password: "adminpass", // en futuro hashed
+		Password: "adm1n@LaSalle",
+		Role:     user.Admin,
+	}
+	r.users["pastoral-sjb"] = user.User{
+		ID:       uuid.NewString(),
+		Username: "pastoral-sjb",
+		Password: "sJb@2025P4st",
+		Role:     user.Admin,
+	}
+	r.users["pastoral-dls"] = user.User{
+		ID:       uuid.NewString(),
+		Username: "pastoral-dls",
+		Password: "dLs@2025P4st",
+		Role:     user.Admin,
+	}
+	r.users["pastoral-uls"] = user.User{
+		ID:       uuid.NewString(),
+		Username: "pastoral-uls",
+		Password: "uLs@2025P4st",
 		Role:     user.Admin,
 	}
 	r.users["composer"] = user.User{
