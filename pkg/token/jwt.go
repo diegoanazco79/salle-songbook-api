@@ -1,12 +1,13 @@
 package token
 
 import (
+	"os"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-var jwtKey = []byte("your_secret_key") // usa env en futuro
+var jwtKey = []byte(os.Getenv("JWT_SECRET_KEY")) // usa env en futuro
 
 type Claims struct {
 	Username string `json:"username"`
@@ -14,7 +15,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(username, role string) (string, error) {
+func GenerateToken(username, role string) (string, time.Time, error) {
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		Username: username,
@@ -26,7 +27,8 @@ func GenerateToken(username, role string) (string, error) {
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtKey)
+	tokenString, err := token.SignedString(jwtKey)
+	return tokenString, expirationTime, err
 }
 
 func ParseToken(tokenString string) (*Claims, error) {

@@ -35,11 +35,14 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	tokenString, err := token.GenerateToken(user.Username, string(user.Role))
+	tokenString, expiresAt, err := token.GenerateToken(user.Username, string(user.Role))
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, "Could not generate token", err.Error())
 		return
 	}
 
-	response.Success(c, gin.H{"token": tokenString}, "Login successful")
+	response.Success(c, gin.H{
+		"token":      tokenString,
+		"expires_at": expiresAt.Unix(),
+	}, "Login successful")
 }
