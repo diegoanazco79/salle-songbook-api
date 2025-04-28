@@ -1,14 +1,10 @@
 package main
 
 import (
-	"context"
+	"log"
 	v1 "salle-songbook-api/internal/ports/api/http/v1"
 
-	ginadapter "github.com/awslabs/aws-lambda-go-api-proxy/gin"
 	"github.com/gin-gonic/gin"
-
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
 
 	"salle-songbook-api/configs"
 	"salle-songbook-api/internal/ports/api/http/middleware"
@@ -16,13 +12,12 @@ import (
 	"salle-songbook-api/internal/ports/repository/mongo"
 )
 
-var ginLambda *ginadapter.GinLambda
-
-func init() {
+func main() {
 	// Cargamos configuración
 	configs.LoadConfig()
 
 	r := gin.Default()
+	r.Use(CORSMiddleware())
 
 	// Inicializamos repositorios
 	songRepo := mongo.NewSongMongoRepository()
@@ -58,15 +53,25 @@ func init() {
 		}
 	}
 
-	// Adaptamos Gin a AWS Lambda handler
-	ginLambda = ginadapter.New(r)
+	// Iniciamos el servidor HTTP en el puerto 8080
+	log.Println("Server starting on http://localhost:8080")
+	if err := r.Run(":8080"); err != nil {
+		log.Fatalf("Error starting server: %v", err)
+	}
 }
 
-func main() {
-	// Ejecutamos como lambda handler
-	lambda.Start(Handler)
-}
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
+		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT")
 
-func Handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-	return ginLambda.ProxyWithContext(ctx, req)
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }
