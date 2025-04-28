@@ -34,11 +34,14 @@ func main() {
 	{
 		api.POST("/login", authHandler.Login)
 
+		// Rutas públicas para canciones (sin middleware)
+		api.GET("/songs", songHandler.GetAll)
+		api.GET("/songs/:id", songHandler.GetByID)
+
+		// Rutas protegidas para canciones
 		songs := api.Group("/songs")
 		songs.Use(middleware.AuthMiddleware(), middleware.AdminOrComposerMiddleware())
 		{
-			songs.GET("", songHandler.GetAll)
-			songs.GET("/:id", songHandler.GetByID)
 			songs.POST("", songHandler.Create)
 			songs.PUT("/:id", songHandler.Update)
 			songs.DELETE("/:id", songHandler.Delete)
