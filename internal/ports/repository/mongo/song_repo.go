@@ -78,11 +78,16 @@ func (r *SongMongoRepository) Create(s song.Song) (song.Song, error) {
 
 	s.ID = uuid.NewString()
 
+	for i := range s.GuitarChordsVersions {
+		s.GuitarChordsVersions[i].ID = uuid.NewString()
+	}
+
 	doc := bson.M{
 		"id":                        s.ID,
 		"title":                     s.Title,
 		"lyrics":                    s.Lyrics,
 		"lyrics_with_guitar_chords": s.LyricsWithGuitarChords,
+		"guitar_chords_versions":    s.GuitarChordsVersions,
 		"author":                    s.Author,
 	}
 
@@ -101,11 +106,18 @@ func (r *SongMongoRepository) Update(id string, s song.Song) (song.Song, error) 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	for i := range s.GuitarChordsVersions {
+		if s.GuitarChordsVersions[i].ID == "" {
+			s.GuitarChordsVersions[i].ID = uuid.NewString()
+		}
+	}
+
 	update := bson.M{
 		"$set": bson.M{
 			"title":                     s.Title,
 			"lyrics":                    s.Lyrics,
 			"lyrics_with_guitar_chords": s.LyricsWithGuitarChords,
+			"guitar_chords_versions":    s.GuitarChordsVersions,
 			"author":                    s.Author,
 		},
 	}
